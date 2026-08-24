@@ -36,6 +36,7 @@ bool isBorderCell(const Simulation *sim, int cellX, int cellY);
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY); // Returns velocity from the left
 float verticalVelocityAt(const Simulation *sim, int cellX, int cellY); // Returns velocity from the bottom
 float pressureAt(const Simulation *sim, int cellX, int cellY);
+float divergenceAt(const Simulation *sim, int cellX, int cellY);
 void updateHorizontalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity);
 void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity);
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure);

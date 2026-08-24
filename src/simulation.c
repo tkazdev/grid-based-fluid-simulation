@@ -3,6 +3,8 @@
 
 #include "Simulation.h"
 
+const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+
 bool isBorderCell(const Simulation *sim, int cellX, int cellY) {
     return cellX == 0 || cellX == sim->sizeX - 1 || cellY == 0 || cellY == sim->sizeY - 1;
 }
@@ -18,6 +20,11 @@ float verticalVelocityAt(const Simulation *sim, int cellX, int cellY) {
 
 float pressureAt(const Simulation *sim, int cellX, int cellY) {
     return sim->pressures[cellX + cellY * sim->sizeX];
+}
+
+float divergenceAt(const Simulation *sim, int cellX, int cellY) {
+    return horizontalVelocityAt(sim, cellX + 1, cellY) - horizontalVelocityAt(sim, cellX, cellY)
+        + verticalVelocityAt(sim, cellX, cellY + 1) - verticalVelocityAt(sim, cellX, cellY);
 }
 
 
@@ -77,38 +84,61 @@ void updatePressures(Simulation *sim, float dt) {
             if (!isBorderCell(sim, cellX, cellY)) {
                 float velocityLeft = horizontalVelocityAt(sim, cellX, cellY);
                 float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
-                float velocityTop = horizontalVelocityAt(sim, cellX, cellY + 1);
-                float velocityBottom = horizontalVelocityAt(sim, cellX, cellY);
+                float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
+                float velocityBottom = verticalVelocityAt(sim, cellX, cellY);
 
                 float averagePressure = 0;
-                int pressureCount = 0;
-                int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+                int fluidEdgeCount = 0;
                 for (int i = 0; i < 4; i++) {
                     int offsetCellX = cellX + offsets[i][0];
                     int offsetCellY = cellY + offsets[i][1];
                     if (!isBorderCell(sim, offsetCellX, offsetCellY)) {
                         averagePressure += pressureAt(sim, offsetCellX, offsetCellY);
-                        pressureCount++;
+                        fluidEdgeCount++;
                     }
                 }
 
-                averagePressure /= pressureCount;
-
-                float pressureLeft = horizontalVelocityAt(sim, cellX - 1, cellY);
-                float pressureRight = horizontalVelocityAt(sim, cellX + 1, cellY);
-                float pressureTop = horizontalVelocityAt(sim, cellX, cellY + 1);
-                float pressureBottom = horizontalVelocityAt(sim, cellX, cellY - 1);
-                
-                float newCellPressure = averagePressure -(velocityRight - velocityLeft + velocityTop - velocityBottom) * sim->fluidDensity * sim->cellWidth / (4 * dt);
-                updatePressureAt(sim, cellX, cellY, newCellPressure);
+                if (fluidEdgeCount > 0) {
+                    averagePressure /= fluidEdgeCount;
+                    float velocitySum = velocityRight - velocityLeft + velocityTop - velocityBottom;
+                    float newCellPressure = averagePressure -velocitySum * sim->fluidDensity * sim->cellWidth / (fluidEdgeCount * dt);
+                    updatePressureAt(sim, cellX, cellY, newCellPressure);
+                }
             }
         }
     }
 }
 
-void updateVelocities(Simulation *sim) {
+void updateVelocities(Simulation *sim, float dt) {
+    const float gradientConstants = dt / (sim->fluidDensity * sim->cellWidth);
+
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
-        for (int cellX = 0; cellX < sim->sizeX; cellX++) {}
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            if (isBorderCell(sim, cellX, cellY)) {
+                updateHorizontalVelocityAt(sim, cellX, cellY, 0);
+                updateHorizontalVelocityAt(sim, cellX + 1, cellY, 0);
+                updateVerticalVelocityAt(sim, cellX, cellY, 0);
+                updateVerticalVelocityAt(sim, cellX, cellY + 1, 0);
+            } else {
+                float curCellPressure = pressureAt(sim, cellX, cellY); 
+                float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
+                float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
+
+                // Horizontal
+                if (!isBorderCell(sim, cellX + 1, cellY)) {
+                    float rightCellPressure = pressureAt(sim, cellX + 1, cellY);
+                    velocityRight += -(rightCellPressure - curCellPressure) * gradientConstants;
+                    updateHorizontalVelocityAt(sim, cellX + 1, cellY, velocityRight);
+                }
+
+                // Vertical
+                if (!isBorderCell(sim, cellX, cellY + 1)) {
+                    float topCellPressure = pressureAt(sim, cellX, cellY + 1);
+                    velocityTop += -(topCellPressure - curCellPressure) * gradientConstants;
+                    updateVerticalVelocityAt(sim, cellX, cellY + 1, velocityTop);
+                }
+            }
+        }
     }
 }
 
@@ -118,6 +148,7 @@ void applyFluidProjection(Simulation *sim) {
     for (int i = 0; i < sim->projectionRepeats; i++) {
         updatePressures(sim, dt);
     }
+    updateVelocities(sim, dt);
 }
 
 void applyVelocityAdvection(Simulation *sim) {}

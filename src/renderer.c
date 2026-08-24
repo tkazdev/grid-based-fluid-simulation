@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "Renderer.h"
 
@@ -8,6 +9,7 @@ const int cellRenderWidth = 80;
 const int gridLineThickness = 2;
 const int velocityArrowThickness = 3;
 const float unitVelocityArrowLength = 10.0f;
+const int lableFontSize = 10;
 
 void initRenderer(int width, int height, int fps) {
     InitWindow(width, height, "Fluid Simulation");
@@ -46,6 +48,17 @@ Vector2 getCellRenderPos(const Simulation *sim, int cellX, int cellY) { // Botto
     drawPos.y -= (GetScreenHeight() - getGridRenderHeight(sim)) / 2;
 
     return drawPos;
+}
+
+bool screenPosOnGrid(const Simulation *sim, int posX, int posY) {
+    Vector2 gridBL = getCellRenderPos(sim, 0, 0);
+    return posX >= gridBL.x && posX < gridBL.x + getGridRenderWidth(sim) && posY <= gridBL.y && posY > gridBL.y - getGridRenderHeight(sim);
+}
+
+void screenToGridPos(const Simulation *sim, int gridPos[2], int posX, int posY) {
+    Vector2 gridBL = getCellRenderPos(sim, 0, 0);
+    gridPos[0] = (int)(Normalize(posX, gridBL.x, gridBL.x + getGridRenderWidth(sim)) * sim->sizeX);
+    gridPos[1] = (int)(Normalize(posY, gridBL.y, gridBL.y - getGridRenderHeight(sim)) * sim->sizeY);
 }
 
 void drawArrow(Vector2 startPos, Vector2 endPos, int thickness, Color color) {
@@ -104,22 +117,27 @@ void renderVelocityArrows(const Simulation *sim) {
     }
 }
 
-void renderPressureLabels(const Simulation *sim) {
-    const int fontSize = 10;
-
+void renderCellLabel(const Simulation *sim, float (*labelFunc)(const Simulation*, int, int), int labelRow) {
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX; cellX++) {
 
             Vector2 drawPos = getCellRenderPos(sim, cellX, cellY);
             drawPos.x += 2;
-            drawPos.y += 2 - cellRenderWidth;
+            drawPos.y += 2 - cellRenderWidth + labelRow * lableFontSize;
 
-            float f = pressureAt(sim, cellX, cellY);
             char buf[8];
-
+            float f = labelFunc(sim, cellX, cellY);
             snprintf(buf, sizeof(buf), "%.2f", f);
 
-            DrawTextEx(GetFontDefault(), buf, drawPos, fontSize, 1.0f, WHITE);
+            DrawTextEx(GetFontDefault(), buf, drawPos, lableFontSize, 1.0f, WHITE);
         }
     }
+}
+
+void renderPressureLabels(const Simulation *sim) {
+    renderCellLabel(sim, pressureAt, 0);
+}
+
+void renderDivergenceLabels(const Simulation *sim) {
+    renderCellLabel(sim, divergenceAt, 1);
 }

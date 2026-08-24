@@ -14,20 +14,22 @@ int main(void) {
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / targetFPS;
-    simSettings.projectionRepeats = 1;
+    simSettings.projectionRepeats = 8;
 
     Simulation sim = createSimulation(&simSettings);
 
-    updateHorizontalVelocityAt(&sim, 2, 3, 1.5f);
+    updateHorizontalVelocityAt(&sim, 2, 3, 10.5f);
     updateVerticalVelocityAt(&sim, 2, 2, 1.0f);
     
     while (!shouldEndSimulation()) {
+        // Update
         updateSimulation(&sim);
 
         // Render
         startRender();
         renderGridLines(&sim);
         renderPressureLabels(&sim);
+        renderDivergenceLabels(&sim);
         renderVelocityArrows(&sim);
         endRender();
     }
