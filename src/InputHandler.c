@@ -15,3 +15,7 @@ void getMouseVelocity(float mouseVel[2]) {
 bool isMouseDown() {
     return IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 }
+
+bool resetButtonPressed() {
+    return IsKeyPressed(KEY_R);
+}

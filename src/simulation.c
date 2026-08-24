@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "Simulation.h"
@@ -9,14 +10,6 @@ const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
 bool isSolidCell(const Simulation *sim, int cellX, int cellY) {
     return cellX == 0 || cellX == sim->sizeX - 1 || cellY == 0 || cellY == sim->sizeY - 1;
-}
-
-int getVelocitiesCountH(const Simulation *sim) {
-    return sim->cellCount + sim->sizeY;
-}
-
-int getVelocitiesCountV(const Simulation *sim) {
-    return sim->cellCount + sim->sizeX;
 }
 
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY) {
@@ -49,6 +42,50 @@ void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) 
     sim->pressures[cellX + cellY * sim->sizeX] = newPressure;
 }
 
+void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY) {
+    int floorPosX = floorf(posX);
+    int floorPosY = floorf(posY);
+    if (isSolidCell(sim, floorPosX, floorPosY)) {
+        velocity[0] = 0;
+        velocity[1] = 0;
+        return;
+    }
+
+    // Lerp horizontal
+    int leftX = floorPosX;
+    int rightX = leftX + 1;
+    int topY = roundf(posY);
+    int bottomY = topY - 1;
+
+    leftX = clampInt(leftX, 0, sim->sizeX - 1);
+    rightX = clampInt(rightX, 0, sim->sizeX - 1);
+    topY = clampInt(topY, 0, sim->sizeY - 1);
+    bottomY = clampInt(bottomY, 0, sim->sizeY - 1);
+    
+    velocity[0] = lerpQuad(
+        horizontalVelocityAt(sim, leftX, topY), horizontalVelocityAt(sim, rightX, topY),
+        horizontalVelocityAt(sim, leftX, bottomY), horizontalVelocityAt(sim, rightX, bottomY),
+        posX - leftX, posY - topY + 0.5f
+    );
+
+    // Lerp vertical
+    leftX = roundf(posX) - 1;
+    rightX = leftX + 1;
+    bottomY = floorPosY;
+    topY = bottomY + 1;
+    
+    leftX = clampInt(leftX, 0, sim->sizeX - 1);
+    rightX = clampInt(rightX, 0, sim->sizeX - 1);
+    topY = clampInt(topY, 0, sim->sizeY - 1);
+    bottomY = clampInt(bottomY, 0, sim->sizeY - 1);
+
+    velocity[1] = lerpQuad(
+        verticalVelocityAt(sim, leftX, topY), verticalVelocityAt(sim, rightX, topY),
+        verticalVelocityAt(sim, leftX, bottomY), verticalVelocityAt(sim, rightX, bottomY),
+        posX - rightX + 0.5f, posY - bottomY
+    );
+}
+
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius) {
     // Find the square that all the updated cells will fall into
     int minX = maxInt(posX - cellRadius, 0);
@@ -78,9 +115,12 @@ Simulation createSimulation(const SimulationSettings *settings) {
     };
 
     sim.fluidDensity = settings->fluidDensity;
+
+    sim.velocityCountH = sim.cellCount + sim.sizeY;
+    sim.velocityCountV = sim.cellCount + sim.sizeX;
     
-    sim.velocitiesH = calloc(getVelocitiesCountH(&sim), sizeof(float));
-    sim.velocitiesV = calloc(getVelocitiesCountV(&sim), sizeof(float));
+    sim.velocitiesH = calloc(sim.velocityCountH, sizeof(float));
+    sim.velocitiesV = calloc(sim.velocityCountV, sizeof(float));
     sim.pressures = calloc((sim.cellCount), sizeof(float));
 
     sim.frameTimestep = settings->frameTimestep;
@@ -95,6 +135,12 @@ void deleteSimulation(Simulation *sim) {
     free(sim->pressures);
 }
 
+void resetSimulation(Simulation *sim) {
+    memset(sim->velocitiesH, 0.0f, sim->velocityCountH * sizeof(float));
+    memset(sim->velocitiesV, 0.0f, sim->velocityCountV * sizeof(float));
+    memset(sim->pressures, 0.0f, sim->cellCount * sizeof(float));
+
+}
 
 
 void updatePressures(Simulation *sim, float dt) {

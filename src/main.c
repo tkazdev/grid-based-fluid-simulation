@@ -10,18 +10,18 @@ int main(void) {
     rSettings.targetFPS = 60;
     rSettings.screenWidth = 800;
     rSettings.screenHeight = 800;
-    rSettings.cellRenderWidth = 20;
+    rSettings.cellRenderWidth = 80;
     rSettings.gridLineThickness = 1;
     rSettings.velocityEdgeArrowThickness = 2;
-    rSettings.unitVelocityEdgeArrowLength = 2.0f;
+    rSettings.unitVelocityEdgeArrowLength = 1.5f;
     rSettings.velocityFieldArrowThickness = 2;
-    rSettings.unitVelocityFieldArrowLength = 1.0f;
+    rSettings.unitVelocityFieldArrowLength = 0.03f;
     rSettings.lableFontSize = 10;
     
     
     SimulationSettings simSettings;
-    simSettings.gridWidth = 32;
-    simSettings.gridHeight = 32;
+    simSettings.gridWidth = 8;
+    simSettings.gridHeight = 8;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
@@ -32,12 +32,17 @@ int main(void) {
     
     while (!shouldEndSimulation()) {
         // Handle inupts
+
+        if (resetButtonPressed()) {
+            resetSimulation(&sim);
+        }
+
         if (isMouseDown()) {
             int mouseGridPos[2];
             float mouseVelocity[2];
             getMouseGridPos(&sim, mouseGridPos);
             getMouseVelocity(mouseVelocity);
-            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 10.0f, mouseVelocity[1] * -10.0f, 3);
+            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 10.0f, mouseVelocity[1] * -10.0f, 1);
         }
 
         // Update
@@ -46,10 +51,11 @@ int main(void) {
         // Render
         startRender();
         renderSolidCells(&sim);
-        // renderGridLines(&sim);
-        // renderPressureLabels(&sim);
-        // renderDivergenceLabels(&sim);
+        renderGridLines(&sim);
+        renderVelocityField(&sim, 4);
         renderVelocityArrows(&sim);
+        // renderPressureLabels(&sim);
+        renderDivergenceLabels(&sim);
         endRender();
     }
 

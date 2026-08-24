@@ -30,5 +30,6 @@ void screenToGridPos(const Simulation *sim, int gridPos[2], int posX, int posY);
 void renderSolidCells(const Simulation *sim);
 void renderGridLines(const Simulation *sim);
 void renderVelocityArrows(const Simulation *sim);
+void renderVelocityField(const Simulation *sim, int lineDensity);
 void renderPressureLabels(const Simulation *sim);
 void renderDivergenceLabels(const Simulation *sim);

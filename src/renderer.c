@@ -37,8 +37,8 @@ int getGridRenderHeight(const Simulation *sim) {
     return sim->sizeY * rSettings.cellRenderWidth;
 }
 
-Vector2 getCellRenderPos(const Simulation *sim, int cellX, int cellY) { // Bottom left pos
-    Vector2 drawPos = {cellX * rSettings.cellRenderWidth, GetScreenHeight() - cellY * rSettings.cellRenderWidth};
+Vector2 getCellRenderPos(const Simulation *sim, float posX, float posY) { // Bottom left pos
+    Vector2 drawPos = {posX * rSettings.cellRenderWidth, GetScreenHeight() - posY * rSettings.cellRenderWidth};
 
     // Ensure the grid is centered
     drawPos.x += (GetScreenWidth() - getGridRenderWidth(sim)) / 2;
@@ -84,17 +84,18 @@ void renderSolidCells(const Simulation *sim) {
 void renderGridLines(const Simulation *sim) {
     const Vector2 gridTR = getCellRenderPos(sim, sim->sizeX, sim->sizeY);
     const Vector2 gridBL = getCellRenderPos(sim, 0, 0);
+    const Color lineColor = {130, 130, 130, 128};
 
     // Draw vertical lines
     for (int x = 0; x < sim->sizeX + 1; x++) {
         int drawX = getCellRenderPos(sim, x, 0).x;
-        DrawLineEx((Vector2){drawX, gridTR.y}, (Vector2){drawX, gridBL.y}, rSettings.gridLineThickness, GRAY);
+        DrawLineEx((Vector2){drawX, gridTR.y}, (Vector2){drawX, gridBL.y}, rSettings.gridLineThickness, lineColor);
     }
 
     // Draw horizontal lines
     for (int y = 0; y < sim->sizeY + 1; y++) {
         int drawY = getCellRenderPos(sim, 0, y).y;
-        DrawLineEx((Vector2){gridBL.x, drawY}, (Vector2){gridTR.x, drawY}, rSettings.gridLineThickness, GRAY);
+        DrawLineEx((Vector2){gridBL.x, drawY}, (Vector2){gridTR.x, drawY}, rSettings.gridLineThickness, lineColor);
     }
 }
 
@@ -103,7 +104,7 @@ void renderVelocityArrows(const Simulation *sim) {
     float *curVelV = sim->velocitiesV;
     
     // Render horizontal arrows
-    for (int i = 0; i < getVelocitiesCountH(sim); i++, curVelH++) {
+    for (int i = 0; i < sim->velocityCountH; i++, curVelH++) {
         int cellX = i / sim->sizeY;
         int cellY = i % sim->sizeY;
         Vector2 startPos = getCellRenderPos(sim, cellX, cellY);
@@ -114,7 +115,7 @@ void renderVelocityArrows(const Simulation *sim) {
     }
 
     // Render vertical arrows
-    for (int i = 0; i < getVelocitiesCountV(sim); i++, curVelV++) {
+    for (int i = 0; i < sim->velocityCountV; i++, curVelV++) {
         int cellX = i % sim->sizeX;
         int cellY = i / sim->sizeX;
         Vector2 startPos = getCellRenderPos(sim, cellX, cellY);
@@ -122,6 +123,21 @@ void renderVelocityArrows(const Simulation *sim) {
         Vector2 endPos = startPos;
         endPos.y += *curVelV * -rSettings.unitVelocityEdgeArrowLength;
         drawArrow(startPos, endPos, rSettings.velocityEdgeArrowThickness, WHITE);
+    }
+}
+
+void renderVelocityField(const Simulation *sim, int lineDensity) {
+    float lineDist = 1.0f / lineDensity;
+    for (float posY = 0; posY <= sim->sizeY; posY += lineDist) {
+        for (float posX = 0; posX <= sim->sizeX; posX += lineDist) {
+            Vector2 startPos = getCellRenderPos(sim, posX, posY);
+            Vector2 endPos = startPos;
+            float velocity[2];
+            getInterpolatedVelocity(sim, velocity, posX, posY);
+            endPos.x += velocity[0] * rSettings.unitVelocityEdgeArrowLength;
+            endPos.y += velocity[1] * -rSettings.unitVelocityEdgeArrowLength;
+            drawArrow(startPos, endPos, rSettings.velocityFieldArrowThickness, BLUE);
+        }
     }
 }
 
