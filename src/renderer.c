@@ -5,15 +5,12 @@
 
 #include "Renderer.h"
 
-const int cellRenderWidth = 20;
-const int gridLineThickness = 1;
-const int velocityArrowThickness = 2;
-const float unitVelocityArrowLength = 2.0f;
-const int lableFontSize = 10;
+static RendererSettings rSettings;
 
-void initRenderer(int width, int height, int fps) {
-    InitWindow(width, height, "Fluid Simulation");
-    SetTargetFPS(fps);
+void initRenderer(const RendererSettings *renderSettings) {
+    rSettings = *renderSettings;
+    InitWindow(rSettings.screenWidth, rSettings.screenHeight, "Fluid Simulation");
+    SetTargetFPS(rSettings.targetFPS);
 }
 
 void deinitRenderer() {
@@ -33,15 +30,15 @@ void endRender() {
 }
 
 int getGridRenderWidth(const Simulation *sim) {
-    return sim->sizeX * cellRenderWidth;
+    return sim->sizeX * rSettings.cellRenderWidth;
 }
 
 int getGridRenderHeight(const Simulation *sim) {
-    return sim->sizeY * cellRenderWidth;
+    return sim->sizeY * rSettings.cellRenderWidth;
 }
 
 Vector2 getCellRenderPos(const Simulation *sim, int cellX, int cellY) { // Bottom left pos
-    Vector2 drawPos = {cellX * cellRenderWidth, GetScreenHeight() - cellY * cellRenderWidth};
+    Vector2 drawPos = {cellX * rSettings.cellRenderWidth, GetScreenHeight() - cellY * rSettings.cellRenderWidth};
 
     // Ensure the grid is centered
     drawPos.x += (GetScreenWidth() - getGridRenderWidth(sim)) / 2;
@@ -80,13 +77,13 @@ void renderGridLines(const Simulation *sim) {
     // Draw vertical lines
     for (int x = 0; x < sim->sizeX + 1; x++) {
         int drawX = getCellRenderPos(sim, x, 0).x;
-        DrawLineEx((Vector2){drawX, gridTR.y}, (Vector2){drawX, gridBL.y}, gridLineThickness, GRAY);
+        DrawLineEx((Vector2){drawX, gridTR.y}, (Vector2){drawX, gridBL.y}, rSettings.gridLineThickness, GRAY);
     }
 
     // Draw horizontal lines
     for (int y = 0; y < sim->sizeY + 1; y++) {
         int drawY = getCellRenderPos(sim, 0, y).y;
-        DrawLineEx((Vector2){gridBL.x, drawY}, (Vector2){gridTR.x, drawY}, gridLineThickness, GRAY);
+        DrawLineEx((Vector2){gridBL.x, drawY}, (Vector2){gridTR.x, drawY}, rSettings.gridLineThickness, GRAY);
     }
 }
 
@@ -99,10 +96,10 @@ void renderVelocityArrows(const Simulation *sim) {
         int cellX = i / sim->sizeY;
         int cellY = i % sim->sizeY;
         Vector2 startPos = getCellRenderPos(sim, cellX, cellY);
-        startPos.y -= cellRenderWidth / 2;
+        startPos.y -= rSettings.cellRenderWidth / 2;
         Vector2 endPos = startPos;
-        endPos.x += *curVelH * unitVelocityArrowLength;
-        drawArrow(startPos, endPos, velocityArrowThickness, WHITE);
+        endPos.x += *curVelH * rSettings.unitVelocityEdgeArrowLength;
+        drawArrow(startPos, endPos, rSettings.velocityEdgeArrowThickness, WHITE);
     }
 
     // Render vertical arrows
@@ -110,10 +107,10 @@ void renderVelocityArrows(const Simulation *sim) {
         int cellX = i % sim->sizeX;
         int cellY = i / sim->sizeX;
         Vector2 startPos = getCellRenderPos(sim, cellX, cellY);
-        startPos.x += cellRenderWidth / 2;
+        startPos.x += rSettings.cellRenderWidth / 2;
         Vector2 endPos = startPos;
-        endPos.y += *curVelV * -unitVelocityArrowLength;
-        drawArrow(startPos, endPos, velocityArrowThickness, WHITE);
+        endPos.y += *curVelV * -rSettings.unitVelocityEdgeArrowLength;
+        drawArrow(startPos, endPos, rSettings.velocityEdgeArrowThickness, WHITE);
     }
 }
 
@@ -123,13 +120,13 @@ void renderCellLabel(const Simulation *sim, float (*labelFunc)(const Simulation*
 
             Vector2 drawPos = getCellRenderPos(sim, cellX, cellY);
             drawPos.x += 2;
-            drawPos.y += 2 - cellRenderWidth + labelRow * lableFontSize;
+            drawPos.y += 2 - rSettings.cellRenderWidth + labelRow * rSettings.lableFontSize;
 
             char buf[8];
             float f = labelFunc(sim, cellX, cellY);
             snprintf(buf, sizeof(buf), "%.2f", f);
 
-            DrawTextEx(GetFontDefault(), buf, drawPos, lableFontSize, 1.0f, WHITE);
+            DrawTextEx(GetFontDefault(), buf, drawPos, rSettings.lableFontSize, 1.0f, WHITE);
         }
     }
 }

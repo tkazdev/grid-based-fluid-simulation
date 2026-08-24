@@ -2,25 +2,33 @@
 #include "Renderer.h"
 #include "InputHandler.h"
 
-const int targetFPS = 60;
-const int screenWidth = 800;
-const int screenHeight = 800;
-
 int main(void) {
-    initRenderer(screenWidth, screenHeight, targetFPS);
+    RendererSettings rSettings;
+    rSettings.screenWidth = 800;
+    rSettings.screenHeight = 800;
+
+    rSettings.targetFPS = 60;
+    rSettings.screenWidth = 800;
+    rSettings.screenHeight = 800;
+    rSettings.cellRenderWidth = 20;
+    rSettings.gridLineThickness = 1;
+    rSettings.velocityEdgeArrowThickness = 2;
+    rSettings.unitVelocityEdgeArrowLength = 2.0f;
+    rSettings.velocityFieldArrowThickness = 2;
+    rSettings.unitVelocityFieldArrowLength = 1.0f;
+    rSettings.lableFontSize = 10;
+    
     
     SimulationSettings simSettings;
     simSettings.gridWidth = 32;
     simSettings.gridHeight = 32;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
-    simSettings.frameTimestep = 1.f / targetFPS;
+    simSettings.frameTimestep = 1.f / rSettings.targetFPS;
     simSettings.projectionRepeats = 32;
 
+    initRenderer(&rSettings);
     Simulation sim = createSimulation(&simSettings);
-
-    updateHorizontalVelocityAt(&sim, 2, 3, 10.5f);
-    updateVerticalVelocityAt(&sim, 2, 2, 1.0f);
     
     while (!shouldEndSimulation()) {
         // Handle inupts
@@ -29,7 +37,7 @@ int main(void) {
             float mouseVelocity[2];
             getMouseGridPos(&sim, mouseGridPos);
             getMouseVelocity(mouseVelocity);
-            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 10.0f, mouseVelocity[1] * 10.0f, 3);
+            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 10.0f, mouseVelocity[1] * -10.0f, 3);
         }
 
         // Update

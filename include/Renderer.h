@@ -4,7 +4,21 @@
 
 #include "Simulation.h"
 
-void initRenderer(int width, int height, int fps);
+typedef struct {
+    int targetFPS;
+    int screenWidth;
+    int screenHeight;
+
+    int cellRenderWidth;
+    int gridLineThickness;
+    int velocityEdgeArrowThickness;
+    float unitVelocityEdgeArrowLength;
+    int velocityFieldArrowThickness;
+    float unitVelocityFieldArrowLength;
+    int lableFontSize;
+} RendererSettings;
+
+void initRenderer(const RendererSettings *renderSettings);
 void deinitRenderer();
 bool shouldEndSimulation();
 void startRender();
