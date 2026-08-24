@@ -7,7 +7,7 @@
 
 const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
-bool isBorderCell(const Simulation *sim, int cellX, int cellY) {
+bool isSolidCell(const Simulation *sim, int cellX, int cellY) {
     return cellX == 0 || cellX == sim->sizeX - 1 || cellY == 0 || cellY == sim->sizeY - 1;
 }
 
@@ -58,7 +58,7 @@ void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int for
 
     for (int cellY = minY; cellY < maxY; cellY++) {
         for (int cellX = minX; cellX < maxX; cellX++) {
-            if (!isBorderCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
+            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
                 float velH = horizontalVelocityAt(sim, cellX, cellY);
                 float velV = verticalVelocityAt(sim, cellX, cellY);
                 const float c = sim->frameTimestep / sim->fluidDensity;
@@ -101,7 +101,7 @@ void updatePressures(Simulation *sim, float dt) {
     // Use the the general momentum form of the Navier-Stokes equation to compute new pressures
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX; cellX++) {
-            if (!isBorderCell(sim, cellX, cellY)) {
+            if (!isSolidCell(sim, cellX, cellY)) {
                 float velocityLeft = horizontalVelocityAt(sim, cellX, cellY);
                 float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
                 float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
@@ -112,7 +112,7 @@ void updatePressures(Simulation *sim, float dt) {
                 for (int i = 0; i < 4; i++) {
                     int offsetCellX = cellX + offsets[i][0];
                     int offsetCellY = cellY + offsets[i][1];
-                    if (!isBorderCell(sim, offsetCellX, offsetCellY)) {
+                    if (!isSolidCell(sim, offsetCellX, offsetCellY)) {
                         averagePressure += pressureAt(sim, offsetCellX, offsetCellY);
                         fluidEdgeCount++;
                     }
@@ -134,7 +134,7 @@ void updateVelocities(Simulation *sim, float dt) {
 
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX; cellX++) {
-            if (isBorderCell(sim, cellX, cellY)) {
+            if (isSolidCell(sim, cellX, cellY)) {
                 updateHorizontalVelocityAt(sim, cellX, cellY, 0);
                 updateHorizontalVelocityAt(sim, cellX + 1, cellY, 0);
                 updateVerticalVelocityAt(sim, cellX, cellY, 0);
@@ -145,14 +145,14 @@ void updateVelocities(Simulation *sim, float dt) {
                 float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
 
                 // Horizontal
-                if (!isBorderCell(sim, cellX + 1, cellY)) {
+                if (!isSolidCell(sim, cellX + 1, cellY)) {
                     float rightCellPressure = pressureAt(sim, cellX + 1, cellY);
                     velocityRight += -(rightCellPressure - curCellPressure) * gradientConstants;
                     updateHorizontalVelocityAt(sim, cellX + 1, cellY, velocityRight);
                 }
 
                 // Vertical
-                if (!isBorderCell(sim, cellX, cellY + 1)) {
+                if (!isSolidCell(sim, cellX, cellY + 1)) {
                     float topCellPressure = pressureAt(sim, cellX, cellY + 1);
                     velocityTop += -(topCellPressure - curCellPressure) * gradientConstants;
                     updateVerticalVelocityAt(sim, cellX, cellY + 1, velocityTop);

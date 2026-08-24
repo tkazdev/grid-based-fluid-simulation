@@ -23,7 +23,7 @@ bool shouldEndSimulation() {
 
 void startRender() {
     BeginDrawing();
-    ClearBackground((Color){13, 14, 36});
+    ClearBackground((Color){17, 18, 46, 255});
 }
 void endRender() {
     EndDrawing();
@@ -69,6 +69,17 @@ void drawArrow(Vector2 startPos, Vector2 endPos, int thickness, Color color) {
 }
 
 
+
+void renderSolidCells(const Simulation *sim) {
+    for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            if (isSolidCell(sim, cellX, cellY)) {
+                Vector2 drawPos = getCellRenderPos(sim, cellX, cellY);
+                DrawRectangle(drawPos.x, drawPos.y - rSettings.cellRenderWidth, rSettings.cellRenderWidth, rSettings.cellRenderWidth, (Color){13, 14, 36, 255});
+            }
+        }
+    }
+}
 
 void renderGridLines(const Simulation *sim) {
     const Vector2 gridTR = getCellRenderPos(sim, sim->sizeX, sim->sizeY);

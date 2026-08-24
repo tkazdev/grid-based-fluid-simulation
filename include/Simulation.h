@@ -30,7 +30,7 @@ Simulation createSimulation(const SimulationSettings *settings);
 void deleteSimulation(Simulation *sim);
 void updateSimulation(Simulation *sim);
 
-bool isBorderCell(const Simulation *sim, int cellX, int cellY);
+bool isSolidCell(const Simulation *sim, int cellX, int cellY);
 int getVelocitiesCountH(const Simulation *sim);
 int getVelocitiesCountV(const Simulation *sim);
 

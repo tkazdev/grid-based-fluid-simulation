@@ -45,7 +45,8 @@ int main(void) {
 
         // Render
         startRender();
-        renderGridLines(&sim);
+        renderSolidCells(&sim);
+        // renderGridLines(&sim);
         // renderPressureLabels(&sim);
         // renderDivergenceLabels(&sim);
         renderVelocityArrows(&sim);

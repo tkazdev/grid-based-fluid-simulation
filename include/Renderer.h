@@ -27,6 +27,7 @@ void endRender();
 bool screenPosOnGrid(const Simulation *sim, int posX, int posY);
 void screenToGridPos(const Simulation *sim, int gridPos[2], int posX, int posY);
 
+void renderSolidCells(const Simulation *sim);
 void renderGridLines(const Simulation *sim);
 void renderVelocityArrows(const Simulation *sim);
 void renderPressureLabels(const Simulation *sim);
