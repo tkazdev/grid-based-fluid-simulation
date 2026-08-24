@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "Simulation.h"
+#include "MathHelpers.h"
 
 const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
@@ -9,6 +11,13 @@ bool isBorderCell(const Simulation *sim, int cellX, int cellY) {
     return cellX == 0 || cellX == sim->sizeX - 1 || cellY == 0 || cellY == sim->sizeY - 1;
 }
 
+int getVelocitiesCountH(const Simulation *sim) {
+    return sim->cellCount + sim->sizeY;
+}
+
+int getVelocitiesCountV(const Simulation *sim) {
+    return sim->cellCount + sim->sizeX;
+}
 
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY) {
     return sim->velocitiesH[cellY + cellX * sim->sizeY];
@@ -40,14 +49,25 @@ void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) 
     sim->pressures[cellX + cellY * sim->sizeX] = newPressure;
 }
 
-int getVelocitiesCountH(const Simulation *sim) {
-    return sim->cellCount + sim->sizeY;
-}
+void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius) {
+    // Find the square that all the updated cells will fall into
+    int minX = maxInt(posX - cellRadius, 0);
+    int maxX = minInt(posX + cellRadius + 1, sim->sizeX);
+    int minY = maxInt(posY - cellRadius, 0);
+    int maxY = minInt(posY + cellRadius + 1, sim->sizeY);
 
-int getVelocitiesCountV(const Simulation *sim) {
-    return sim->cellCount + sim->sizeX;
+    for (int cellY = minY; cellY < maxY; cellY++) {
+        for (int cellX = minX; cellX < maxX; cellX++) {
+            if (!isBorderCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
+                float velH = horizontalVelocityAt(sim, cellX, cellY);
+                float velV = verticalVelocityAt(sim, cellX, cellY);
+                const float c = sim->frameTimestep / sim->fluidDensity;
+                updateHorizontalVelocityAt(sim, cellX, cellY, velH + forceX * c);
+                updateVerticalVelocityAt(sim, cellX, cellY, velV + forceY * c);
+            }
+        }
+    }
 }
-
 
 Simulation createSimulation(const SimulationSettings *settings) {
     Simulation sim = {
@@ -120,7 +140,7 @@ void updateVelocities(Simulation *sim, float dt) {
                 updateVerticalVelocityAt(sim, cellX, cellY, 0);
                 updateVerticalVelocityAt(sim, cellX, cellY + 1, 0);
             } else {
-                float curCellPressure = pressureAt(sim, cellX, cellY); 
+                float curCellPressure = pressureAt(sim, cellX, cellY);
                 float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
                 float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
 

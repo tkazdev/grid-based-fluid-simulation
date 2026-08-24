@@ -5,10 +5,10 @@
 
 #include "Renderer.h"
 
-const int cellRenderWidth = 80;
-const int gridLineThickness = 2;
-const int velocityArrowThickness = 3;
-const float unitVelocityArrowLength = 10.0f;
+const int cellRenderWidth = 20;
+const int gridLineThickness = 1;
+const int velocityArrowThickness = 2;
+const float unitVelocityArrowLength = 2.0f;
 const int lableFontSize = 10;
 
 void initRenderer(int width, int height, int fps) {
@@ -57,8 +57,8 @@ bool screenPosOnGrid(const Simulation *sim, int posX, int posY) {
 
 void screenToGridPos(const Simulation *sim, int gridPos[2], int posX, int posY) {
     Vector2 gridBL = getCellRenderPos(sim, 0, 0);
-    gridPos[0] = (int)(Normalize(posX, gridBL.x, gridBL.x + getGridRenderWidth(sim)) * sim->sizeX);
-    gridPos[1] = (int)(Normalize(posY, gridBL.y, gridBL.y - getGridRenderHeight(sim)) * sim->sizeY);
+    gridPos[0] = floorf(Normalize(posX, gridBL.x, gridBL.x + getGridRenderWidth(sim)) * sim->sizeX);
+    gridPos[1] = floorf(Normalize(posY, gridBL.y, gridBL.y - getGridRenderHeight(sim)) * sim->sizeY);
 }
 
 void drawArrow(Vector2 startPos, Vector2 endPos, int thickness, Color color) {
