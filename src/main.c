@@ -25,7 +25,8 @@ int main(void) {
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
-    simSettings.projectionRepeats = 32;
+    simSettings.projectionRepeats = 20;
+    simSettings.projectionSOR = 1.5;
 
     initRenderer(&rSettings);
     Simulation sim = createSimulation(&simSettings);

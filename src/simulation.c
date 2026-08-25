@@ -45,11 +45,11 @@ void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) 
 void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY) {
     int floorPosX = floorf(posX);
     int floorPosY = floorf(posY);
-    if (isSolidCell(sim, floorPosX, floorPosY)) {
-        velocity[0] = 0;
-        velocity[1] = 0;
-        return;
-    }
+    // if (isSolidCell(sim, floorPosX, floorPosY)) {
+    //     velocity[0] = 0;
+    //     velocity[1] = 0;
+    //     return;
+    // }
 
     // Lerp horizontal
     int leftX = floorPosX;
@@ -125,6 +125,7 @@ Simulation createSimulation(const SimulationSettings *settings) {
 
     sim.frameTimestep = settings->frameTimestep;
     sim.projectionRepeats = settings->projectionRepeats;
+    sim.projectionSOR = settings->projectionSOR;
 
     return sim;
 }
@@ -168,7 +169,9 @@ void updatePressures(Simulation *sim, float dt) {
                     averagePressure /= fluidEdgeCount;
                     float velocitySum = velocityRight - velocityLeft + velocityTop - velocityBottom;
                     float newCellPressure = averagePressure -velocitySum * sim->fluidDensity * sim->cellWidth / (fluidEdgeCount * dt);
-                    updatePressureAt(sim, cellX, cellY, newCellPressure);
+                    float curCellPressure = pressureAt(sim, cellX, cellY);
+                    curCellPressure += (newCellPressure - curCellPressure) * sim->projectionSOR;
+                    updatePressureAt(sim, cellX, cellY, curCellPressure);
                 }
             }
         }

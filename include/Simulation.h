@@ -13,9 +13,10 @@ typedef struct {
     float *velocitiesH;
     float *velocitiesV;
     float *pressures;
-
+    
     float frameTimestep;
     int projectionRepeats;
+    float projectionSOR;
 
 } Simulation;
 
@@ -26,6 +27,7 @@ typedef struct {
     float fluidDensity;
     float frameTimestep;
     int projectionRepeats;
+    float projectionSOR;
 } SimulationSettings;
 
 Simulation createSimulation(const SimulationSettings *settings);
