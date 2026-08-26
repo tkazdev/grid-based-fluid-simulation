@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "Renderer.h"
+#include "MathHelpers.h"
 
 static RendererSettings rSettings;
 
@@ -126,8 +127,8 @@ void renderVelocityArrows(const Simulation *sim) {
     }
 }
 
-void renderVelocityField(const Simulation *sim, int lineDensity) {
-    float lineDist = 1.0f / lineDensity;
+void renderVelocityField(const Simulation *sim, float lineDensity) {
+    const float lineDist = 1.0f / lineDensity;
     for (float posY = 0; posY <= sim->sizeY; posY += lineDist) {
         for (float posX = 0; posX <= sim->sizeX; posX += lineDist) {
             Vector2 startPos = getCellRenderPos(sim, posX, posY);
@@ -137,6 +138,35 @@ void renderVelocityField(const Simulation *sim, int lineDensity) {
             endPos.x += velocity[0] * rSettings.unitVelocityEdgeArrowLength;
             endPos.y += velocity[1] * -rSettings.unitVelocityEdgeArrowLength;
             drawArrow(startPos, endPos, rSettings.velocityFieldArrowThickness, BLUE);
+        }
+    }
+}
+
+void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedSpeed) {
+    const float smallCellWidth = 1.0f / cellDensity;
+    const int smallCellRenderWidth = smallCellWidth * rSettings.cellRenderWidth;
+
+    const Color colors[] = {
+        SKYBLUE,
+        {3, 252, 94, 255},
+        YELLOW,
+        RED,
+    };
+    const int colorCount = sizeof(colors) / sizeof(Color);
+    
+
+    for (float posY = 0; posY < sim->sizeY; posY += smallCellWidth) {
+        for (float posX = 0; posX < sim->sizeX; posX += smallCellWidth) {
+            float velocity[2];
+            getInterpolatedVelocity(sim, velocity, posX + smallCellWidth / 2.0f, posY + smallCellWidth / 2.0f);
+            float speed = minFloat(Vector2Length((Vector2){velocity[0], velocity[1]}), maxExpectedSpeed);
+
+            float colorFactor = speed / maxExpectedSpeed * colorCount;
+            int colorIdx = minInt(colorFactor, colorCount - 1);
+            Color cellColor = ColorLerp(colors[colorIdx], colors[minInt(colorIdx + 1, colorCount - 1)], colorFactor - colorIdx);
+
+            Vector2 drawPos = getCellRenderPos(sim, posX, posY);
+            DrawRectangle(drawPos.x, drawPos.y - smallCellRenderWidth, smallCellRenderWidth, smallCellRenderWidth, cellColor);
         }
     }
 }

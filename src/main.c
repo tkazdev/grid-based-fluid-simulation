@@ -10,7 +10,7 @@ int main(void) {
     rSettings.targetFPS = 60;
     rSettings.screenWidth = 800;
     rSettings.screenHeight = 800;
-    rSettings.cellRenderWidth = 80;
+    rSettings.cellRenderWidth = 20;
     rSettings.gridLineThickness = 1;
     rSettings.velocityEdgeArrowThickness = 2;
     rSettings.unitVelocityEdgeArrowLength = 1.5f;
@@ -20,12 +20,12 @@ int main(void) {
     
     
     SimulationSettings simSettings;
-    simSettings.gridWidth = 8;
-    simSettings.gridHeight = 8;
+    simSettings.gridWidth = 32;
+    simSettings.gridHeight = 32;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
-    simSettings.projectionRepeats = 5;
+    simSettings.projectionRepeats = 20;
     simSettings.projectionSOR = 1.5;
 
     initRenderer(&rSettings);
@@ -43,7 +43,7 @@ int main(void) {
             float mouseVelocity[2];
             getMouseGridPos(&sim, mouseGridPos);
             getMouseVelocity(mouseVelocity);
-            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 50.0f, mouseVelocity[1] * -50.0f, 1);
+            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 50.0f, mouseVelocity[1] * -50.0f, 5);
         }
 
         // Update
@@ -51,12 +51,17 @@ int main(void) {
 
         // Render
         startRender();
+
         renderSolidCells(&sim);
+        renderFluidSpeed(&sim, 1, 100.0f);
         renderGridLines(&sim);
-        renderVelocityField(&sim, 4);
-        renderVelocityArrows(&sim);
+
+        renderVelocityField(&sim, 0.5f);
+        // renderVelocityArrows(&sim);
+
         // renderPressureLabels(&sim);
-        renderDivergenceLabels(&sim);
+        // renderDivergenceLabels(&sim);
+
         endRender();
     }
 
