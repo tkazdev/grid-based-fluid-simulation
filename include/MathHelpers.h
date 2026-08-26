@@ -12,3 +12,8 @@ static inline int clampInt(int v, int min, int max) {
     int r = (v < min) ? min : v;
     return (r > max) ? max : v;
 }
+
+static inline float clampFloat(float v, float min, float max) {
+    float r = (v < min) ? min : v;
+    return (r > max) ? max : v;
+}

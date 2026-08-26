@@ -13,14 +13,20 @@ bool isSolidCell(const Simulation *sim, int cellX, int cellY) {
 }
 
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY) {
+    cellX = clampInt(cellX, 0, sim->sizeX);
+    cellY = clampInt(cellY, 0, sim->sizeY - 1);
     return sim->velocitiesH[cellY + cellX * sim->sizeY];
 }
 
 float verticalVelocityAt(const Simulation *sim, int cellX, int cellY) {
+    cellX = clampInt(cellX, 0, sim->sizeX - 1);
+    cellY = clampInt(cellY, 0, sim->sizeY);
     return sim->velocitiesV[cellX + cellY * sim->sizeX];
 }
 
 float pressureAt(const Simulation *sim, int cellX, int cellY) {
+    cellX = clampInt(cellX, 0, sim->sizeX - 1);
+    cellY = clampInt(cellY, 0, sim->sizeY - 1);
     return sim->pressures[cellX + cellY * sim->sizeX];
 }
 
@@ -29,61 +35,64 @@ float divergenceAt(const Simulation *sim, int cellX, int cellY) {
         + verticalVelocityAt(sim, cellX, cellY + 1) - verticalVelocityAt(sim, cellX, cellY);
 }
 
+void updateHorizontalVelocityArrayAt(const Simulation *sim, float velocitiesH[], int cellX, int cellY, float newVelocity) {
+    if (cellX < 0 || cellX > sim->sizeX || cellY < 0 || cellY > sim->sizeY - 1) return;
+    velocitiesH[cellY + cellX * sim->sizeY] = newVelocity;
+}
+
+void updateVerticalVelocityArrayAt(const Simulation *sim, float velocitiesV[], int cellX, int cellY, float newVelocity) {
+    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY) return;
+    velocitiesV[cellX + cellY * sim->sizeX] = newVelocity;
+}
 
 void updateHorizontalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity) {
-    sim->velocitiesH[cellY + cellX * sim->sizeY] = newVelocity;
+    updateHorizontalVelocityArrayAt(sim, sim->velocitiesH, cellX, cellY, newVelocity);
 }
 
 void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity) {
-    sim->velocitiesV[cellX + cellY * sim->sizeX] = newVelocity;
+    updateVerticalVelocityArrayAt(sim, sim->velocitiesV, cellX, cellY, newVelocity);
 }
 
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) {
+    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY - 1) return;
     sim->pressures[cellX + cellY * sim->sizeX] = newPressure;
 }
 
-void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY) {
-    int floorPosX = floorf(posX);
-    int floorPosY = floorf(posY);
-    // if (isSolidCell(sim, floorPosX, floorPosY)) {
-    //     velocity[0] = 0;
-    //     velocity[1] = 0;
-    //     return;
-    // }
+float getHorizontalInterpolatedVelocity(const Simulation *sim, float posX, float posY) {
+    posX = clampFloat(posX, 0, sim->sizeX);
+    posY = clampFloat(posY, 0, sim->sizeY);
 
-    // Lerp horizontal
-    int leftX = floorPosX;
+    int leftX = floorf(posX);
     int rightX = leftX + 1;
     int topY = roundf(posY);
     int bottomY = topY - 1;
-
-    leftX = clampInt(leftX, 0, sim->sizeX - 1);
-    rightX = clampInt(rightX, 0, sim->sizeX - 1);
-    topY = clampInt(topY, 0, sim->sizeY - 1);
-    bottomY = clampInt(bottomY, 0, sim->sizeY - 1);
     
-    velocity[0] = lerpQuad(
+    return lerpQuad(
         horizontalVelocityAt(sim, leftX, topY), horizontalVelocityAt(sim, rightX, topY),
         horizontalVelocityAt(sim, leftX, bottomY), horizontalVelocityAt(sim, rightX, bottomY),
         posX - leftX, posY - topY + 0.5f
     );
+}
 
-    // Lerp vertical
-    leftX = roundf(posX) - 1;
-    rightX = leftX + 1;
-    bottomY = floorPosY;
-    topY = bottomY + 1;
-    
-    leftX = clampInt(leftX, 0, sim->sizeX - 1);
-    rightX = clampInt(rightX, 0, sim->sizeX - 1);
-    topY = clampInt(topY, 0, sim->sizeY - 1);
-    bottomY = clampInt(bottomY, 0, sim->sizeY - 1);
+float getVerticalInterpolatedVelocity(const Simulation *sim, float posX, float posY) {
+    posX = clampFloat(posX, 0, sim->sizeX);
+    posY = clampFloat(posY, 0, sim->sizeY);
 
-    velocity[1] = lerpQuad(
+    float leftX = roundf(posX) - 1;
+    float rightX = leftX + 1;
+    float bottomY = floorf(posY);
+    float topY = bottomY + 1;
+
+    return lerpQuad(
         verticalVelocityAt(sim, leftX, topY), verticalVelocityAt(sim, rightX, topY),
         verticalVelocityAt(sim, leftX, bottomY), verticalVelocityAt(sim, rightX, bottomY),
         posX - rightX + 0.5f, posY - bottomY
     );
+}
+
+void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY) {
+    velocity[0] = getHorizontalInterpolatedVelocity(sim, posX, posY);
+    velocity[1] = getVerticalInterpolatedVelocity(sim, posX, posY);
 }
 
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius) {
@@ -140,7 +149,6 @@ void resetSimulation(Simulation *sim) {
     memset(sim->velocitiesH, 0.0f, sim->velocityCountH * sizeof(float));
     memset(sim->velocitiesV, 0.0f, sim->velocityCountV * sizeof(float));
     memset(sim->pressures, 0.0f, sim->cellCount * sizeof(float));
-
 }
 
 
@@ -190,21 +198,21 @@ void updateVelocities(Simulation *sim, float dt) {
                 updateVerticalVelocityAt(sim, cellX, cellY + 1, 0);
             } else {
                 float curCellPressure = pressureAt(sim, cellX, cellY);
-                float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
-                float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
+                float velocityLeft = horizontalVelocityAt(sim, cellX, cellY);
+                float velocityBottom = verticalVelocityAt(sim, cellX, cellY);
 
                 // Horizontal
-                if (!isSolidCell(sim, cellX + 1, cellY)) {
-                    float rightCellPressure = pressureAt(sim, cellX + 1, cellY);
-                    velocityRight += -(rightCellPressure - curCellPressure) * gradientConstants;
-                    updateHorizontalVelocityAt(sim, cellX + 1, cellY, velocityRight);
+                if (!isSolidCell(sim, cellX - 1, cellY)) {
+                    float leftCellPressure = pressureAt(sim, cellX - 1, cellY);
+                    velocityLeft += (leftCellPressure - curCellPressure) * gradientConstants;
+                    updateHorizontalVelocityAt(sim, cellX, cellY, velocityLeft);
                 }
 
                 // Vertical
-                if (!isSolidCell(sim, cellX, cellY + 1)) {
-                    float topCellPressure = pressureAt(sim, cellX, cellY + 1);
-                    velocityTop += -(topCellPressure - curCellPressure) * gradientConstants;
-                    updateVerticalVelocityAt(sim, cellX, cellY + 1, velocityTop);
+                if (!isSolidCell(sim, cellX, cellY - 1)) {
+                    float bottomCellPressure = pressureAt(sim, cellX, cellY - 1);
+                    velocityBottom += (bottomCellPressure - curCellPressure) * gradientConstants;
+                    updateVerticalVelocityAt(sim, cellX, cellY, velocityBottom);
                 }
             }
         }
@@ -220,9 +228,40 @@ void applyFluidProjection(Simulation *sim) {
     updateVelocities(sim, dt);
 }
 
-void applyVelocityAdvection(Simulation *sim) {}
+void applyVelocityAdvection(Simulation *sim) {
+    // Semi-Lagrangian advection
+
+    float *newVelocitiesH = calloc(sim->velocityCountH, sizeof(float));
+    float *newVelocitiesV = calloc(sim->velocityCountV, sizeof(float));
+
+    for (int cellY = 0; cellY < sim->sizeY + 1; cellY++) {
+        for (int cellX = 0; cellX < sim->sizeX + 1; cellX++) {
+            float leftFaceVel[2];
+            float bottomFaceVel[2];
+            float posX = cellX;
+            float posY = cellY;
+
+            getInterpolatedVelocity(sim, leftFaceVel, posX, posY + 0.5f);
+            getInterpolatedVelocity(sim, bottomFaceVel, posX + 0.5f, posY);
+
+            float newLeftFaceVel[2];
+            float newBottomFaceVel[2];
+            getInterpolatedVelocity(sim, newLeftFaceVel, posX - leftFaceVel[0] * sim->frameTimestep, posY - leftFaceVel[1] * sim->frameTimestep + 0.5f);
+            getInterpolatedVelocity(sim, newBottomFaceVel, posX - bottomFaceVel[0] * sim->frameTimestep + 0.5f, posY - bottomFaceVel[1] * sim->frameTimestep);
+
+            updateHorizontalVelocityArrayAt(sim, newVelocitiesH, cellX, cellY, newLeftFaceVel[0]);
+            updateVerticalVelocityArrayAt(sim, newVelocitiesV, cellX, cellY, newBottomFaceVel[1]);
+        }
+    }
+
+    memcpy(sim->velocitiesH, newVelocitiesH, sim->velocityCountH * sizeof(float));
+    memcpy(sim->velocitiesV, newVelocitiesV, sim->velocityCountV * sizeof(float));
+    free(newVelocitiesH);
+    free(newVelocitiesV);
+}
 
 
 void updateSimulation(Simulation *sim) {
     applyFluidProjection(sim);
+    applyVelocityAdvection(sim);
 }

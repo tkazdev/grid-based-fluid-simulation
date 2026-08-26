@@ -15,7 +15,7 @@ int main(void) {
     rSettings.velocityEdgeArrowThickness = 2;
     rSettings.unitVelocityEdgeArrowLength = 1.5f;
     rSettings.velocityFieldArrowThickness = 2;
-    rSettings.unitVelocityFieldArrowLength = 0.03f;
+    rSettings.unitVelocityFieldArrowLength = 0.08f;
     rSettings.lableFontSize = 10;
     
     
@@ -25,7 +25,7 @@ int main(void) {
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
-    simSettings.projectionRepeats = 20;
+    simSettings.projectionRepeats = 5;
     simSettings.projectionSOR = 1.5;
 
     initRenderer(&rSettings);
@@ -43,7 +43,7 @@ int main(void) {
             float mouseVelocity[2];
             getMouseGridPos(&sim, mouseGridPos);
             getMouseVelocity(mouseVelocity);
-            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 10.0f, mouseVelocity[1] * -10.0f, 1);
+            applyExternalForce(&sim, mouseGridPos[0], mouseGridPos[1], mouseVelocity[0] * 50.0f, mouseVelocity[1] * -50.0f, 1);
         }
 
         // Update

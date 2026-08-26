@@ -44,4 +44,8 @@ void updateHorizontalVelocityAt(Simulation *sim, int cellX, int cellY, float new
 void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity);
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure);
 void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY);
+
+
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius);
+void applyFluidProjection(Simulation *sim);
+void applyVelocityAdvection(Simulation *sim);
