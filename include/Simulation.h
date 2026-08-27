@@ -10,6 +10,7 @@ typedef struct {
     float fluidDensity;
     int velocityCountH;
     int velocityCountV;
+    bool *solidCells;
     float *velocitiesH;
     float *velocitiesV;
     float *pressures;
@@ -49,7 +50,12 @@ void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure);
 void updateParticleDensityAt(Simulation *sim, int cellX, int cellY, float newDensity);
 void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY);
 
+void setSolidCell(Simulation *sim, int cellX, int cellY);
+void addSolidCircle(Simulation *sim, int centerX, int centerY, int radius);
+void addSolidRectangle(Simulation *sim, int posX, int posY, int width, int height);
+void addSolidBorder(Simulation *sim, bool leftEdge, bool rightEdge, bool bottomEdge, bool topEdge);
 
+void applyExternalWindForce(Simulation *sim, float force, bool leftEdge, bool rightEdge, bool bottomEdge, bool topEdge);
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius);
 void increaseParticleDensity(Simulation *sim, int posX, int posY, float densityIncrease, int cellRadius);
 void applyFluidProjection(Simulation *sim);

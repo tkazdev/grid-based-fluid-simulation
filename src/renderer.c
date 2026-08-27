@@ -176,7 +176,7 @@ void renderFluidDensity(const Simulation *sim) {
         for (float posX = 0; posX < sim->sizeX; posX++) {
             Vector2 drawPos = getCellRenderPos(sim, posX, posY);
             float particleDensity = getInterpolatedParticleDensityAt(sim, posX + 0.5f, posY + 0.5f);
-            Color cellColor = ColorLerp(BLACK, WHITE, particleDensity);
+            Color cellColor = ColorLerp((Color){0, 0, 0, 0}, WHITE, particleDensity);
             DrawRectangle(drawPos.x, drawPos.y - rSettings.cellRenderWidth, rSettings.cellRenderWidth, rSettings.cellRenderWidth, cellColor);
         }
     }

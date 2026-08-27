@@ -8,8 +8,13 @@
 
 const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
+bool isInGrid(const Simulation *sim, int cellX, int cellY) {
+    return (cellX >= 0 && cellX < sim->sizeX && cellY >= 0 && cellY < sim->sizeY);
+}
+
 bool isSolidCell(const Simulation *sim, int cellX, int cellY) {
-    return cellX == 0 || cellX == sim->sizeX - 1 || cellY == 0 || cellY == sim->sizeY - 1;
+    if (!isInGrid(sim, cellX, cellY)) return false;
+    return sim->solidCells[cellX + cellY * sim->sizeX];
 }
 
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY) {
@@ -31,8 +36,7 @@ float pressureAt(const Simulation *sim, int cellX, int cellY) {
 }
 
 float particleDensityAt(const Simulation *sim, int cellX, int cellY) {
-    cellX = clampInt(cellX, 0, sim->sizeX - 1);
-    cellY = clampInt(cellY, 0, sim->sizeY - 1);
+    if (!isInGrid(sim, cellX, cellY)) return 0.0f;
     return sim->densityField[cellX + cellY * sim->sizeX];
 }
 
@@ -58,13 +62,15 @@ float divergenceAt(const Simulation *sim, int cellX, int cellY) {
 }
 
 void updateHorizontalVelocityArrayAt(const Simulation *sim, float velocitiesH[], int cellX, int cellY, float newVelocity) {
-    if (cellX < 0 || cellX > sim->sizeX || cellY < 0 || cellY > sim->sizeY - 1) return;
-    velocitiesH[cellY + cellX * sim->sizeY] = newVelocity;
+    int idx = cellY + cellX * sim->sizeY;
+    if (cellX < 0 || cellX > sim->sizeX || cellY < 0 || cellY > sim->sizeY - 1 || idx >= sim->velocityCountH) return;
+    velocitiesH[idx] = newVelocity;
 }
 
 void updateVerticalVelocityArrayAt(const Simulation *sim, float velocitiesV[], int cellX, int cellY, float newVelocity) {
-    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY) return;
-    velocitiesV[cellX + cellY * sim->sizeX] = newVelocity;
+    int idx = cellX + cellY * sim->sizeX;
+    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY || idx >= sim->velocityCountV) return;
+    velocitiesV[idx] = newVelocity;
 }
 
 void updateHorizontalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity) {
@@ -76,12 +82,12 @@ void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVe
 }
 
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) {
-    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY - 1) return;
+    if (!isInGrid(sim, cellX, cellY)) return;
     sim->pressures[cellX + cellY * sim->sizeX] = newPressure;
 }
 
 void updateParticleDensityArrayAt(Simulation *sim, float densityField[], int cellX, int cellY, float newDensity) {
-    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY - 1) return;
+    if (!isInGrid(sim, cellX, cellY)) return;
     densityField[cellX + cellY * sim->sizeX] = newDensity;
 }
 
@@ -126,6 +132,78 @@ void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float pos
     velocity[1] = getVerticalInterpolatedVelocity(sim, posX, posY);
 }
 
+void setSolidCell(Simulation *sim, int cellX, int cellY) {
+    if (!isInGrid(sim, cellX, cellY)) return;
+    sim->solidCells[cellX + cellY * sim->sizeX] = true;
+}
+
+void addSolidCircle(Simulation *sim, int centerX, int centerY, int radius) {
+    for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            if (squareInt(centerX - cellX) + squareInt(centerY - cellY) < squareInt(radius)) {
+                setSolidCell(sim, cellX, cellY);
+            }
+        }
+    }
+}
+
+void addSolidRectangle(Simulation *sim, int posX, int posY, int width, int height) {
+    for (int cellY = posY; cellY < posY + height; cellY++) {
+        for (int cellX = posX; cellX < posX + width; cellX++) {
+            setSolidCell(sim, cellX, cellY);
+        }
+    }
+}
+
+void addSolidBorder(Simulation *sim, bool leftEdge, bool rightEdge, bool bottomEdge, bool topEdge) {
+    if (leftEdge) {
+        for (int posY = 0; posY < sim->sizeY; posY++) setSolidCell(sim, 0, posY);
+    }
+
+    if (rightEdge) {
+        for (int posY = 0; posY < sim->sizeY; posY++) setSolidCell(sim, sim->sizeX - 1, posY);
+    }
+
+    if (bottomEdge) {
+        for (int posX = 0; posX < sim->sizeX; posX++) setSolidCell(sim, posX, 0);
+    }
+
+    if (topEdge) {
+        for (int posX = 0; posX < sim->sizeX; posX++) setSolidCell(sim, posX, sim->sizeY - 1);
+    }
+}
+
+void applyExternalWindForce(Simulation *sim, float force, bool leftEdge, bool rightEdge, bool bottomEdge, bool topEdge) {
+    if (leftEdge) {
+        for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+            float curVel = horizontalVelocityAt(sim, 1, cellY);
+            updateHorizontalVelocityAt(sim, 1, cellY, curVel + force);
+        }
+    }
+    
+    if (rightEdge) {
+        for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+            float curVel = horizontalVelocityAt(sim, sim->sizeX - 1, cellY);
+            updateHorizontalVelocityAt(sim, sim->sizeX - 1, cellY, curVel - force);
+        }
+    }
+
+    if (bottomEdge) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            float curVel = horizontalVelocityAt(sim, cellX, 1);
+            updateVerticalVelocityAt(sim, cellX, 1, curVel + force);
+        }
+    }
+
+    if (topEdge) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            float curVel = horizontalVelocityAt(sim, cellX, sim->sizeY - 1);
+            updateVerticalVelocityAt(sim, cellX, sim->sizeY - 1, curVel - force);
+        }
+    }
+
+}
+
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius) {
     // Find the square that all the updated cells will fall into
     int minX = maxInt(posX - cellRadius, 0);
@@ -135,7 +213,7 @@ void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int for
 
     for (int cellY = minY; cellY < maxY; cellY++) {
         for (int cellX = minX; cellX < maxX; cellX++) {
-            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
+            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) < squareInt(cellRadius)) {
                 float velH = horizontalVelocityAt(sim, cellX, cellY);
                 float velV = verticalVelocityAt(sim, cellX, cellY);
                 const float c = sim->frameTimestep / sim->fluidDensity;
@@ -154,7 +232,7 @@ void increaseParticleDensity(Simulation *sim, int posX, int posY, float densityI
 
     for (int cellY = minY; cellY < maxY; cellY++) {
         for (int cellX = minX; cellX < maxX; cellX++) {
-            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
+            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) < squareInt(cellRadius)) {
                 float curDensity = particleDensityAt(sim, cellX, cellY);
                 updateParticleDensityAt(sim,cellX, cellY, curDensity + densityIncrease);
             }
@@ -179,6 +257,7 @@ Simulation createSimulation(const SimulationSettings *settings) {
     sim.velocitiesV = calloc(sim.velocityCountV, sizeof(float));
     sim.pressures = calloc((sim.cellCount), sizeof(float));
     sim.densityField = calloc((sim.cellCount), sizeof(float));
+    sim.solidCells = calloc((sim.cellCount), sizeof(bool));
 
     sim.frameTimestep = settings->frameTimestep;
     sim.projectionRepeats = settings->projectionRepeats;
@@ -192,6 +271,7 @@ void deleteSimulation(Simulation *sim) {
     free(sim->velocitiesV);
     free(sim->pressures);
     free(sim->densityField);
+    free(sim->solidCells);
 }
 
 void resetSimulation(Simulation *sim) {
