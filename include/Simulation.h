@@ -13,6 +13,7 @@ typedef struct {
     float *velocitiesH;
     float *velocitiesV;
     float *pressures;
+    float *densityField;
     
     float frameTimestep;
     int projectionRepeats;
@@ -39,13 +40,18 @@ bool isSolidCell(const Simulation *sim, int cellX, int cellY);
 float horizontalVelocityAt(const Simulation *sim, int cellX, int cellY); // Returns velocity from the left
 float verticalVelocityAt(const Simulation *sim, int cellX, int cellY); // Returns velocity from the bottom
 float pressureAt(const Simulation *sim, int cellX, int cellY);
+float particleDensityAt(const Simulation *sim, int cellX, int cellY);
+float getInterpolatedParticleDensityAt(const Simulation *sim, float posX, float posY);
 float divergenceAt(const Simulation *sim, int cellX, int cellY);
 void updateHorizontalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity);
 void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVelocity);
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure);
+void updateParticleDensityAt(Simulation *sim, int cellX, int cellY, float newDensity);
 void getInterpolatedVelocity(const Simulation *sim, float velocity[2], float posX, float posY);
 
 
 void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int forceY, int cellRadius);
+void increaseParticleDensity(Simulation *sim, int posX, int posY, float densityIncrease, int cellRadius);
 void applyFluidProjection(Simulation *sim);
 void applyVelocityAdvection(Simulation *sim);
+void applyParticleDensityAdvection(Simulation *sim);

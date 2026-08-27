@@ -19,3 +19,7 @@ bool isMouseDown() {
 bool resetButtonPressed() {
     return IsKeyPressed(KEY_R);
 }
+
+bool particleButtonDown() {
+    return IsKeyDown(KEY_SPACE);
+}

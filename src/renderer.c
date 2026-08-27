@@ -135,8 +135,8 @@ void renderVelocityField(const Simulation *sim, float lineDensity) {
             Vector2 endPos = startPos;
             float velocity[2];
             getInterpolatedVelocity(sim, velocity, posX, posY);
-            endPos.x += velocity[0] * rSettings.unitVelocityEdgeArrowLength;
-            endPos.y += velocity[1] * -rSettings.unitVelocityEdgeArrowLength;
+            endPos.x += velocity[0] * rSettings.unitVelocityFieldArrowLength;
+            endPos.y += velocity[1] * -rSettings.unitVelocityFieldArrowLength;
             drawArrow(startPos, endPos, rSettings.velocityFieldArrowThickness, BLUE);
         }
     }
@@ -167,6 +167,17 @@ void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedS
 
             Vector2 drawPos = getCellRenderPos(sim, posX, posY);
             DrawRectangle(drawPos.x, drawPos.y - smallCellRenderWidth, smallCellRenderWidth, smallCellRenderWidth, cellColor);
+        }
+    }
+}
+
+void renderFluidDensity(const Simulation *sim) {
+    for (float posY = 0; posY < sim->sizeY; posY++) {
+        for (float posX = 0; posX < sim->sizeX; posX++) {
+            Vector2 drawPos = getCellRenderPos(sim, posX, posY);
+            float particleDensity = getInterpolatedParticleDensityAt(sim, posX + 0.5f, posY + 0.5f);
+            Color cellColor = ColorLerp(BLACK, WHITE, particleDensity);
+            DrawRectangle(drawPos.x, drawPos.y - rSettings.cellRenderWidth, rSettings.cellRenderWidth, rSettings.cellRenderWidth, cellColor);
         }
     }
 }

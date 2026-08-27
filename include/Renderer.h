@@ -32,5 +32,6 @@ void renderGridLines(const Simulation *sim);
 void renderVelocityArrows(const Simulation *sim);
 void renderVelocityField(const Simulation *sim, float lineDensity);
 void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedSpeed);
+void renderFluidDensity(const Simulation *sim);
 void renderPressureLabels(const Simulation *sim);
 void renderDivergenceLabels(const Simulation *sim);

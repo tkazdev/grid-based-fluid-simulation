@@ -30,6 +30,28 @@ float pressureAt(const Simulation *sim, int cellX, int cellY) {
     return sim->pressures[cellX + cellY * sim->sizeX];
 }
 
+float particleDensityAt(const Simulation *sim, int cellX, int cellY) {
+    cellX = clampInt(cellX, 0, sim->sizeX - 1);
+    cellY = clampInt(cellY, 0, sim->sizeY - 1);
+    return sim->densityField[cellX + cellY * sim->sizeX];
+}
+
+float getInterpolatedParticleDensityAt(const Simulation *sim, float posX, float posY) {
+    posX = clampFloat(posX, 0, sim->sizeX);
+    posY = clampFloat(posY, 0, sim->sizeY);
+
+    int rightEdge = roundf(posX);
+    int leftEdge = maxInt(rightEdge - 1, 0);
+    int topEdge = roundf(posY);
+    int bottomEdge = maxInt(topEdge - 1, 0);
+
+    return lerpQuad(
+        particleDensityAt(sim, leftEdge, topEdge), particleDensityAt(sim, rightEdge, topEdge),
+        particleDensityAt(sim, leftEdge, bottomEdge), particleDensityAt(sim, rightEdge, bottomEdge),
+        posX - rightEdge + 0.5f, posY - topEdge + 0.5f
+    );
+}
+
 float divergenceAt(const Simulation *sim, int cellX, int cellY) {
     return horizontalVelocityAt(sim, cellX + 1, cellY) - horizontalVelocityAt(sim, cellX, cellY)
         + verticalVelocityAt(sim, cellX, cellY + 1) - verticalVelocityAt(sim, cellX, cellY);
@@ -56,6 +78,15 @@ void updateVerticalVelocityAt(Simulation *sim, int cellX, int cellY, float newVe
 void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) {
     if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY - 1) return;
     sim->pressures[cellX + cellY * sim->sizeX] = newPressure;
+}
+
+void updateParticleDensityArrayAt(Simulation *sim, float densityField[], int cellX, int cellY, float newDensity) {
+    if (cellX < 0 || cellX > sim->sizeX - 1 || cellY < 0 || cellY > sim->sizeY - 1) return;
+    densityField[cellX + cellY * sim->sizeX] = newDensity;
+}
+
+void updateParticleDensityAt(Simulation *sim, int cellX, int cellY, float newDensity) {
+    updateParticleDensityArrayAt(sim, sim->densityField, cellX, cellY, newDensity);
 }
 
 float getHorizontalInterpolatedVelocity(const Simulation *sim, float posX, float posY) {
@@ -115,6 +146,22 @@ void applyExternalForce(Simulation *sim, int posX, int posY, int forceX, int for
     }
 }
 
+void increaseParticleDensity(Simulation *sim, int posX, int posY, float densityIncrease, int cellRadius) {
+    int minX = maxInt(posX - cellRadius, 0);
+    int maxX = minInt(posX + cellRadius + 1, sim->sizeX);
+    int minY = maxInt(posY - cellRadius, 0);
+    int maxY = minInt(posY + cellRadius + 1, sim->sizeY);
+
+    for (int cellY = minY; cellY < maxY; cellY++) {
+        for (int cellX = minX; cellX < maxX; cellX++) {
+            if (!isSolidCell(sim, cellX, cellY) && squareInt(posX - cellX) + squareInt(posY - cellY) <= squareInt(cellRadius)) {
+                float curDensity = particleDensityAt(sim, cellX, cellY);
+                updateParticleDensityAt(sim,cellX, cellY, curDensity + densityIncrease);
+            }
+        }
+    }
+}
+
 Simulation createSimulation(const SimulationSettings *settings) {
     Simulation sim = {
         settings->gridWidth,
@@ -131,6 +178,7 @@ Simulation createSimulation(const SimulationSettings *settings) {
     sim.velocitiesH = calloc(sim.velocityCountH, sizeof(float));
     sim.velocitiesV = calloc(sim.velocityCountV, sizeof(float));
     sim.pressures = calloc((sim.cellCount), sizeof(float));
+    sim.densityField = calloc((sim.cellCount), sizeof(float));
 
     sim.frameTimestep = settings->frameTimestep;
     sim.projectionRepeats = settings->projectionRepeats;
@@ -143,12 +191,14 @@ void deleteSimulation(Simulation *sim) {
     free(sim->velocitiesH);
     free(sim->velocitiesV);
     free(sim->pressures);
+    free(sim->densityField);
 }
 
 void resetSimulation(Simulation *sim) {
     memset(sim->velocitiesH, 0.0f, sim->velocityCountH * sizeof(float));
     memset(sim->velocitiesV, 0.0f, sim->velocityCountV * sizeof(float));
     memset(sim->pressures, 0.0f, sim->cellCount * sizeof(float));
+    memset(sim->densityField, 0.0f, sim->cellCount * sizeof(float));
 }
 
 
@@ -231,8 +281,8 @@ void applyFluidProjection(Simulation *sim) {
 void applyVelocityAdvection(Simulation *sim) {
     // Semi-Lagrangian advection
 
-    float *newVelocitiesH = calloc(sim->velocityCountH, sizeof(float));
-    float *newVelocitiesV = calloc(sim->velocityCountV, sizeof(float));
+    float *newVelocitiesH = malloc(sim->velocityCountH * sizeof(float));
+    float *newVelocitiesV = malloc(sim->velocityCountV * sizeof(float));
 
     for (int cellY = 0; cellY < sim->sizeY + 1; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX + 1; cellX++) {
@@ -260,8 +310,25 @@ void applyVelocityAdvection(Simulation *sim) {
     free(newVelocitiesV);
 }
 
+void applyParticleDensityAdvection(Simulation *sim) {
+    float *newDensityField = malloc(sim->cellCount * sizeof(float));
+
+    for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            float velocity[2];
+            getInterpolatedVelocity(sim, velocity, cellX + 0.5f, cellY + 0.5f);
+            float newDensity = getInterpolatedParticleDensityAt(sim, cellX + 0.5f - velocity[0] * sim->frameTimestep, cellY + 0.5f - velocity[1] * sim->frameTimestep);
+            updateParticleDensityArrayAt(sim, newDensityField, cellX, cellY, newDensity);
+        }
+    }
+
+    memcpy(sim->densityField, newDensityField, sim->cellCount * sizeof(float));
+    free(newDensityField);
+}
+
 
 void updateSimulation(Simulation *sim) {
     applyFluidProjection(sim);
     applyVelocityAdvection(sim);
+    applyParticleDensityAdvection(sim);
 }
