@@ -8,7 +8,7 @@ int main(void) {
     rSettings.targetFPS = 60;
     rSettings.screenWidth = 1400;
     rSettings.screenHeight = 800;
-    rSettings.cellRenderWidth = 40;
+    rSettings.cellRenderWidth = 2;
     rSettings.gridLineThickness = 1;
     rSettings.velocityEdgeArrowThickness = 2;
     rSettings.unitVelocityEdgeArrowLength = 1.5f;
@@ -18,8 +18,8 @@ int main(void) {
     
     
     SimulationSettings simSettings;
-    simSettings.gridWidth = 32;
-    simSettings.gridHeight = 16;
+    simSettings.gridWidth = 640;
+    simSettings.gridHeight = 360;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
@@ -52,6 +52,7 @@ int main(void) {
         }
 
         // Update
+        applyExternalWindForce(&sim, 20.0f, false, false, false, true);
         updateSimulation(&sim);
 
         // Render
@@ -63,7 +64,7 @@ int main(void) {
         // renderGridLines(&sim);
 
         // renderVelocityField(&sim, 0.125f);
-        renderVelocityArrows(&sim);
+        // renderVelocityArrows(&sim);
 
         // renderPressureLabels(&sim);
         // renderDivergenceLabels(&sim);

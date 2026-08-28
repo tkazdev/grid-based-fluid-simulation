@@ -282,11 +282,11 @@ void resetSimulation(Simulation *sim) {
 }
 
 
-void updatePressures(Simulation *sim, float dt) {
+void updatePressures(Simulation *sim, float dt, bool oddCells) {
     // Use the the general momentum form of the Navier-Stokes equation to compute new pressures
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX; cellX++) {
-            if (!isSolidCell(sim, cellX, cellY)) {
+            if (!isSolidCell(sim, cellX, cellY) && (cellX + cellY) % 2 == oddCells) {
                 float velocityLeft = horizontalVelocityAt(sim, cellX, cellY);
                 float velocityRight = horizontalVelocityAt(sim, cellX + 1, cellY);
                 float velocityTop = verticalVelocityAt(sim, cellX, cellY + 1);
@@ -353,7 +353,8 @@ void applyFluidProjection(Simulation *sim) {
     const float dt = sim->frameTimestep / sim->projectionRepeats;
 
     for (int i = 0; i < sim->projectionRepeats; i++) {
-        updatePressures(sim, dt);
+        updatePressures(sim, dt, false);
+        updatePressures(sim, dt, true);
     }
     updateVelocities(sim, dt);
 }
