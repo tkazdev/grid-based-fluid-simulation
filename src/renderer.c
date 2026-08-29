@@ -206,3 +206,11 @@ void renderPressureLabels(const Simulation *sim) {
 void renderDivergenceLabels(const Simulation *sim) {
     renderCellLabel(sim, divergenceAt, 1);
 }
+
+void renderFPS(int posX, int posY) {
+    float fps = 1.0f / GetFrameTime();
+
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%.0f", fps);
+    DrawTextEx(GetFontDefault(), buf, (Vector2){posX, posY}, rSettings.uiFontSize, 1.0f, WHITE);
+}

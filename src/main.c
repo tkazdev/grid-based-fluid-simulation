@@ -8,28 +8,30 @@ int main(void) {
     rSettings.targetFPS = 60;
     rSettings.screenWidth = 1400;
     rSettings.screenHeight = 800;
-    rSettings.cellRenderWidth = 2;
+    rSettings.cellRenderWidth = 5;
     rSettings.gridLineThickness = 1;
     rSettings.velocityEdgeArrowThickness = 2;
     rSettings.unitVelocityEdgeArrowLength = 1.5f;
     rSettings.velocityFieldArrowThickness = 2;
     rSettings.unitVelocityFieldArrowLength = 0.3f;
     rSettings.lableFontSize = 10;
+    rSettings.uiFontSize = 20;
     
     
     SimulationSettings simSettings;
-    simSettings.gridWidth = 640;
-    simSettings.gridHeight = 360;
+    simSettings.gridWidth = 160;
+    simSettings.gridHeight = 90;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS;
-    simSettings.projectionRepeats = 10;
+    simSettings.projectionRepeats = 8;
     simSettings.projectionSOR = 1.8;
 
     initRenderer(&rSettings);
     Simulation sim = createSimulation(&simSettings);
     
-    addSolidBorder(&sim, true, true, true, true);
+    addSolidBorder(&sim, true, false, true, true);
+    addSolidCircle(&sim, 50, simSettings.gridHeight / 2, simSettings.gridHeight / 8);
 
     while (!shouldEndSimulation()) {
         // Handle inupts
@@ -48,11 +50,11 @@ int main(void) {
         }
 
         if (particleButtonDown()) {
-            increaseParticleDensity(&sim, mouseGridPos[0], mouseGridPos[1], 0.15f, 2);
+            increaseParticleDensity(&sim, mouseGridPos[0], mouseGridPos[1], 0.15f, 4);
         }
 
         // Update
-        applyExternalWindForce(&sim, 20.0f, false, false, false, true);
+        applyExternalWindForce(&sim, 50.0f, true, false, false, false);
         updateSimulation(&sim);
 
         // Render
@@ -63,11 +65,13 @@ int main(void) {
         renderFluidDensity(&sim);
         // renderGridLines(&sim);
 
-        // renderVelocityField(&sim, 0.125f);
+        renderVelocityField(&sim, 0.2f);
         // renderVelocityArrows(&sim);
 
         // renderPressureLabels(&sim);
         // renderDivergenceLabels(&sim);
+
+        renderFPS(10, 10);
 
         endRender();
     }

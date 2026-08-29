@@ -16,6 +16,7 @@ typedef struct {
     int velocityFieldArrowThickness;
     float unitVelocityFieldArrowLength;
     int lableFontSize;
+    int uiFontSize;
 } RendererSettings;
 
 void initRenderer(const RendererSettings *renderSettings);
@@ -35,3 +36,4 @@ void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedS
 void renderFluidDensity(const Simulation *sim);
 void renderPressureLabels(const Simulation *sim);
 void renderDivergenceLabels(const Simulation *sim);
+void renderFPS(int posX, int posY);
