@@ -23,8 +23,8 @@ int main(void) {
     simSettings.gridHeight = 90;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
-    simSettings.frameTimestep = 1.f / rSettings.targetFPS;
-    simSettings.projectionRepeats = 8;
+    simSettings.frameTimestep = 1.f / rSettings.targetFPS * 2.0f;
+    simSettings.projectionRepeats = 12;
     simSettings.projectionSOR = 1.8;
 
     initRenderer(&rSettings);
@@ -50,20 +50,23 @@ int main(void) {
         }
 
         if (particleButtonDown()) {
-            increaseParticleDensity(&sim, mouseGridPos[0], mouseGridPos[1], 0.15f, 4);
+            increaseParticleDensity(&sim, mouseGridPos[0], mouseGridPos[1], 0.15f, 5);
         }
 
         // Update
-        applyExternalWindForce(&sim, 50.0f, true, false, false, false);
+        applyExternalWindForce(&sim, 20.0f, true, false, false, false);
+        increaseParticleDensity(&sim, 0, simSettings.gridHeight / 2, 0.1f, 5);
+
         updateSimulation(&sim);
 
         // Render
         startRender();
 
-        renderSolidCells(&sim);
         // renderFluidSpeed(&sim, 1, 100.0f);
+        renderFluidPressure(&sim, 2000);
         renderFluidDensity(&sim);
         // renderGridLines(&sim);
+        renderSolidCells(&sim);
 
         renderVelocityField(&sim, 0.2f);
         // renderVelocityArrows(&sim);

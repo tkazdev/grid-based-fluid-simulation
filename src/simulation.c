@@ -8,7 +8,7 @@
 
 const int offsets[4][2] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 
-bool isInGrid(const Simulation *sim, int cellX, int cellY) {
+static inline bool isInGrid(const Simulation *sim, int cellX, int cellY) {
     return (cellX >= 0 && cellX < sim->sizeX && cellY >= 0 && cellY < sim->sizeY);
 }
 
@@ -352,6 +352,7 @@ void updateVelocities(Simulation *sim, float dt) {
 void applyFluidProjection(Simulation *sim) {
     const float dt = sim->frameTimestep / sim->projectionRepeats;
 
+    memset(sim->pressures, 0.0f, sim->cellCount * sizeof(float));
     for (int i = 0; i < sim->projectionRepeats; i++) {
         updatePressures(sim, dt, false);
         updatePressures(sim, dt, true);

@@ -8,6 +8,14 @@
 
 static RendererSettings rSettings;
 
+const Color renderColors[] = {
+    SKYBLUE,
+    {3, 252, 94, 255},
+    YELLOW,
+    RED,
+};
+const int renderColorCount = sizeof(renderColors) / sizeof(Color);
+
 void initRenderer(const RendererSettings *renderSettings) {
     rSettings = *renderSettings;
     InitWindow(rSettings.screenWidth, rSettings.screenHeight, "Fluid Simulation");
@@ -145,14 +153,6 @@ void renderVelocityField(const Simulation *sim, float lineDensity) {
 void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedSpeed) {
     const float smallCellWidth = 1.0f / cellDensity;
     const int smallCellRenderWidth = smallCellWidth * rSettings.cellRenderWidth;
-
-    const Color colors[] = {
-        SKYBLUE,
-        {3, 252, 94, 255},
-        YELLOW,
-        RED,
-    };
-    const int colorCount = sizeof(colors) / sizeof(Color);
     
 
     for (float posY = 0; posY < sim->sizeY; posY += smallCellWidth) {
@@ -161,12 +161,29 @@ void renderFluidSpeed(const Simulation *sim, int cellDensity, float maxExpectedS
             getInterpolatedVelocity(sim, velocity, posX + smallCellWidth / 2.0f, posY + smallCellWidth / 2.0f);
             float speed = minFloat(Vector2Length((Vector2){velocity[0], velocity[1]}), maxExpectedSpeed);
 
-            float colorFactor = speed / maxExpectedSpeed * colorCount;
-            int colorIdx = minInt(colorFactor, colorCount - 1);
-            Color cellColor = ColorLerp(colors[colorIdx], colors[minInt(colorIdx + 1, colorCount - 1)], colorFactor - colorIdx);
+            float colorFactor = speed / maxExpectedSpeed * renderColorCount;
+            int colorIdx = minInt(colorFactor, renderColorCount - 1);
+            Color cellColor = ColorLerp(renderColors[colorIdx], renderColors[minInt(colorIdx + 1, renderColorCount - 1)], colorFactor - colorIdx);
 
             Vector2 drawPos = getCellRenderPos(sim, posX, posY);
             DrawRectangle(drawPos.x, drawPos.y - smallCellRenderWidth, smallCellRenderWidth, smallCellRenderWidth, cellColor);
+        }
+    }
+}
+
+void renderFluidPressure(const Simulation *sim, float maxExpectedPressure) {
+    for (int cellY = 0; cellY < sim->sizeY; cellY++) {
+        for (int cellX = 0; cellX < sim->sizeX; cellX++) {
+            
+            float pressure = clampFloat(pressureAt(sim, cellX, cellY), -maxExpectedPressure, maxExpectedPressure);
+
+
+            float colorFactor = (pressure / maxExpectedPressure + 1.0f) / 2.0f * renderColorCount;
+            int colorIdx = minInt(colorFactor, renderColorCount - 1);
+            Color cellColor = ColorLerp(renderColors[colorIdx], renderColors[minInt(colorIdx + 1, renderColorCount - 1)], colorFactor - colorIdx);
+
+            Vector2 drawcell = getCellRenderPos(sim, cellX, cellY);
+            DrawRectangle(drawcell.x, drawcell.y - rSettings.cellRenderWidth, rSettings.cellRenderWidth, rSettings.cellRenderWidth, cellColor);
         }
     }
 }

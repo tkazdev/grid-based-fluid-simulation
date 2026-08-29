@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 4.4)
 
 project(simulation C)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_FLAGS "-O3")
 
 # Add Raylib
 include(FetchContent)
