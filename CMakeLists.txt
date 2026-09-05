@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.4)
+cmake_minimum_required(VERSION 3.28)
 
 project(simulation C)
 set(CMAKE_C_STANDARD 99)

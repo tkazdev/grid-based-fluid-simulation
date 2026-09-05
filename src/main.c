@@ -2,13 +2,15 @@
 #include "Renderer.h"
 #include "InputHandler.h"
 
+const float speedScale = 3.0f;
+
 int main(void) {
     RendererSettings rSettings;
 
     rSettings.targetFPS = 60;
     rSettings.screenWidth = 1400;
     rSettings.screenHeight = 800;
-    rSettings.cellRenderWidth = 5;
+    rSettings.cellRenderWidth = 2;
     rSettings.gridLineThickness = 1;
     rSettings.velocityEdgeArrowThickness = 2;
     rSettings.unitVelocityEdgeArrowLength = 1.5f;
@@ -19,12 +21,12 @@ int main(void) {
     
     
     SimulationSettings simSettings;
-    simSettings.gridWidth = 160;
-    simSettings.gridHeight = 90;
+    simSettings.gridWidth = 320;
+    simSettings.gridHeight = 180;
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
-    simSettings.frameTimestep = 1.f / rSettings.targetFPS * 2.0f;
-    simSettings.projectionRepeats = 12;
+    simSettings.frameTimestep = 1.f / rSettings.targetFPS * speedScale;
+    simSettings.projectionRepeats = 8 * speedScale;
     simSettings.projectionSOR = 1.8;
 
     initRenderer(&rSettings);
@@ -55,7 +57,7 @@ int main(void) {
 
         // Update
         applyExternalWindForce(&sim, 20.0f, true, false, false, false);
-        increaseParticleDensity(&sim, 0, simSettings.gridHeight / 2, 0.1f, 5);
+        increaseParticleDensity(&sim, 2, simSettings.gridHeight / 2, 0.15f, 7);
 
         updateSimulation(&sim);
 
@@ -63,12 +65,12 @@ int main(void) {
         startRender();
 
         // renderFluidSpeed(&sim, 1, 100.0f);
-        renderFluidPressure(&sim, 2000);
+        // renderFluidPressure(&sim, 2000);
         renderFluidDensity(&sim);
         // renderGridLines(&sim);
         renderSolidCells(&sim);
 
-        renderVelocityField(&sim, 0.2f);
+        // renderVelocityField(&sim, 0.2f);
         // renderVelocityArrows(&sim);
 
         // renderPressureLabels(&sim);

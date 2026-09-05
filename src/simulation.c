@@ -88,6 +88,7 @@ void updatePressureAt(Simulation *sim, int cellX, int cellY, float newPressure) 
 
 void updateParticleDensityArrayAt(Simulation *sim, float densityField[], int cellX, int cellY, float newDensity) {
     if (!isInGrid(sim, cellX, cellY)) return;
+    newDensity = clampFloat(newDensity, 0.0f, 1.0f);
     densityField[cellX + cellY * sim->sizeX] = newDensity;
 }
 
