@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "InputHandler.h"
 
-const float speedScale = 3.0f;
+const float speedScale = 2.0f;
 
 int main(void) {
     RendererSettings rSettings;
@@ -26,7 +26,7 @@ int main(void) {
     simSettings.cellWidth = 1;
     simSettings.fluidDensity = 1;
     simSettings.frameTimestep = 1.f / rSettings.targetFPS * speedScale;
-    simSettings.projectionRepeats = 8 * speedScale;
+    simSettings.projectionRepeats = 12 * (int)speedScale;
     simSettings.projectionSOR = 1.8;
 
     initRenderer(&rSettings);

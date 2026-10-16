@@ -10,11 +10,16 @@ typedef struct {
     float fluidDensity;
     int velocityCountH;
     int velocityCountV;
+
     bool *solidCells;
     float *velocitiesH;
     float *velocitiesV;
     float *pressures;
     float *densityField;
+
+    float *newVelocitiesH;
+    float *newVelocitiesV;
+    float *newDensityField;
     
     float frameTimestep;
     int projectionRepeats;

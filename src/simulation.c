@@ -260,6 +260,10 @@ Simulation createSimulation(const SimulationSettings *settings) {
     sim.densityField = calloc((sim.cellCount), sizeof(float));
     sim.solidCells = calloc((sim.cellCount), sizeof(bool));
 
+    sim.newVelocitiesH = malloc(sim.velocityCountH * sizeof(float));
+    sim.newVelocitiesV = malloc(sim.velocityCountV * sizeof(float));
+    sim.newDensityField = malloc(sim.cellCount * sizeof(float));
+
     sim.frameTimestep = settings->frameTimestep;
     sim.projectionRepeats = settings->projectionRepeats;
     sim.projectionSOR = settings->projectionSOR;
@@ -273,6 +277,10 @@ void deleteSimulation(Simulation *sim) {
     free(sim->pressures);
     free(sim->densityField);
     free(sim->solidCells);
+
+    free(sim->newVelocitiesH);
+    free(sim->newVelocitiesV);
+    free(sim->newDensityField);
 }
 
 void resetSimulation(Simulation *sim) {
@@ -363,10 +371,6 @@ void applyFluidProjection(Simulation *sim) {
 
 void applyVelocityAdvection(Simulation *sim) {
     // Semi-Lagrangian advection
-
-    float *newVelocitiesH = malloc(sim->velocityCountH * sizeof(float));
-    float *newVelocitiesV = malloc(sim->velocityCountV * sizeof(float));
-
     for (int cellY = 0; cellY < sim->sizeY + 1; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX + 1; cellX++) {
             float leftFaceVel[2];
@@ -382,31 +386,26 @@ void applyVelocityAdvection(Simulation *sim) {
             getInterpolatedVelocity(sim, newLeftFaceVel, posX - leftFaceVel[0] * sim->frameTimestep, posY - leftFaceVel[1] * sim->frameTimestep + 0.5f);
             getInterpolatedVelocity(sim, newBottomFaceVel, posX - bottomFaceVel[0] * sim->frameTimestep + 0.5f, posY - bottomFaceVel[1] * sim->frameTimestep);
 
-            updateHorizontalVelocityArrayAt(sim, newVelocitiesH, cellX, cellY, newLeftFaceVel[0]);
-            updateVerticalVelocityArrayAt(sim, newVelocitiesV, cellX, cellY, newBottomFaceVel[1]);
+            updateHorizontalVelocityArrayAt(sim, sim->newVelocitiesH, cellX, cellY, newLeftFaceVel[0]);
+            updateVerticalVelocityArrayAt(sim, sim->newVelocitiesV, cellX, cellY, newBottomFaceVel[1]);
         }
     }
 
-    memcpy(sim->velocitiesH, newVelocitiesH, sim->velocityCountH * sizeof(float));
-    memcpy(sim->velocitiesV, newVelocitiesV, sim->velocityCountV * sizeof(float));
-    free(newVelocitiesH);
-    free(newVelocitiesV);
+    memcpy(sim->velocitiesH, sim->newVelocitiesH, sim->velocityCountH * sizeof(float));
+    memcpy(sim->velocitiesV, sim->newVelocitiesV, sim->velocityCountV * sizeof(float));
 }
 
 void applyParticleDensityAdvection(Simulation *sim) {
-    float *newDensityField = malloc(sim->cellCount * sizeof(float));
-
     for (int cellY = 0; cellY < sim->sizeY; cellY++) {
         for (int cellX = 0; cellX < sim->sizeX; cellX++) {
             float velocity[2];
             getInterpolatedVelocity(sim, velocity, cellX + 0.5f, cellY + 0.5f);
             float newDensity = getInterpolatedParticleDensityAt(sim, cellX + 0.5f - velocity[0] * sim->frameTimestep, cellY + 0.5f - velocity[1] * sim->frameTimestep);
-            updateParticleDensityArrayAt(sim, newDensityField, cellX, cellY, newDensity);
+            updateParticleDensityArrayAt(sim, sim->newDensityField, cellX, cellY, newDensity);
         }
     }
 
-    memcpy(sim->densityField, newDensityField, sim->cellCount * sizeof(float));
-    free(newDensityField);
+    memcpy(sim->densityField, sim->newDensityField, sim->cellCount * sizeof(float));
 }
 
 
