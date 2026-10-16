@@ -16,3 +16,9 @@ After building run:
 Or for windows:
 
     ./build/bin/simulation.exe
+
+
+## Resources I found helpful
+https://www.youtube.com/watch?v=iKAVRgIrUOU
+https://www.youtube.com/watch?v=Q78wvrQ9xsU
+https://www.youtube.com/watch?v=dyiREvdc4Gg
